@@ -1,0 +1,127 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;*------------------------------------------------------
+                       ----------------------
+    2 00000000         ;* Name:    Lab_0_program.s 
+    3 00000000         ;* Purpose: Teaching students how to work with the uVisi
+                       on software 
+    4 00000000         ;* Author:  Rasoul Keshavarzi 
+    5 00000000         ;*------------------------------------------------------
+                       ----------------------
+    6 00000000         
+    7 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+    8 00000000                 THUMB
+    9 00000000                 EXPORT           Start       ; The start of the 
+                                                            program must be cal
+                                                            led "Start" as it m
+                                                            atches the Startup.
+                                                            s file
+   10 00000000         Start
+   11 00000000         
+   12 00000000         ; Store 0x1234,5678 into memory address 0x2000,0000 in o
+                       rder to see how the little-endian 
+   13 00000000         ; approach writes data into memory 
+   14 00000000 F245 6078       MOV              R0, #0x5678 ; Load the lower ha
+                                                            lf of R0 and clear 
+                                                            the upper half
+   15 00000004 F2C1 2034       MOVT             R0, #0x1234 ; Load the upper ha
+                                                            lf of R0 
+   16 00000008 F04F 0100       MOV              R1, #0x0    ; Load the lower ha
+                                                            lf of R1 with zeros
+                                                             
+   17 0000000C F2C2 0100       MOVT             R1, #0x2000 ; 0x2000,0000 is no
+                                                            w stored in R1 
+   18 00000010 6008            STR              R0, [R1]    ; Store register R0
+                                                             in the address poi
+                                                            nted to by R1 (0x20
+                                                            00,0000) 
+   19 00000012         ; Look at memory address 0x2000,0000 after this runs
+   20 00000012         ; Importing values to registers 
+   21 00000012 F240 1023       MOV              R0, #0x123  ; Loading 123 into 
+                                                            R0 
+   22 00000016 F240 4156       MOV              R1, #0x456  ; Loading 456 into 
+                                                            R1 
+   23 0000001A F240 7289       MOV              R2, #0x789  ; Loading 789 into 
+                                                            R2 
+   24 0000001E F640 23BC       MOV              R3, #0xABC  ; Loading ABC into 
+                                                            R3 
+   25 00000022 F640 54EF       MOV              R4, #0xDEF  ; Loading DEF into 
+                                                            R4 
+   26 00000026 F04F 0500       MOV              R5, #0x0    ; Loading R5 with z
+                                                            eros 
+   27 0000002A         
+   28 0000002A         ; Swapping the values in R0 and R1 (R5 is used as tempor
+                       ary buffer) 
+   29 0000002A 4605            MOV              R5, R0      ; R5 <-- R0 (conten
+                                                            t of R0 is stored i
+                                                            n R5) 
+   30 0000002C 4608            MOV              R0, R1      ; R0 <-- R1 (conten
+                                                            t of R1 is stored i
+                                                            n R0) 
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   31 0000002E 4629            MOV              R1, R5      ; R1 <-- R5 (conten
+                                                            t of R5 is stored i
+                                                            n R1) 
+   32 00000030         
+   33 00000030         ; Adding five values together R5 <-- R0+R1+R2+R3+R4 
+   34 00000030 EB00 0501       ADD              R5, R0, R1  ; R5 <-- R0 + R1 
+   35 00000034 4415            ADD              R5, R2      ; R5 <-- R5 + R2 
+   36 00000036 441D            ADD              R5, R3      ; R5 <-- R5 + R3 
+   37 00000038 4425            ADD              R5, R4      ; R5 <-- R5 + R4 
+   38 0000003A         
+   39 0000003A E7FE    LOOP    B                LOOP        ; Branch back to th
+                                                            is line – an infini
+                                                            te loop 
+   40 0000003C         
+   41 0000003C                 ALIGN                        ; make sure the end
+                                                             of this section is
+                                                             aligned
+   42 0000003C                 END                          ; end of file
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=.\objects\lab0_tiva.d -o.\objects\lab0_tiva.o -I.\RTE\_Target_1
+ -IC:\Users\navey\AppData\Local\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C123 -IC:
+\Keil_v5\ARM\CMSIS\Include --predefine="__EVAL SETA 1" --predefine="__UVISION_V
+ERSION SETA 528" --predefine="TM4C123GH6PM SETA 1" --list=.\listings\lab0_tiva.
+lst Lab0_tiva.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 7 in file Lab0_tiva.s
+   Uses
+      None
+Comment: .text unused
+LOOP 0000003A
+
+Symbol: LOOP
+   Definitions
+      At line 39 in file Lab0_tiva.s
+   Uses
+      At line 39 in file Lab0_tiva.s
+Comment: LOOP used once
+Start 00000000
+
+Symbol: Start
+   Definitions
+      At line 10 in file Lab0_tiva.s
+   Uses
+      At line 9 in file Lab0_tiva.s
+Comment: Start used once
+3 symbols
+337 symbols in table

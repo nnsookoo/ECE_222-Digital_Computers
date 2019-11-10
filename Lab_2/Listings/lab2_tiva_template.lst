@@ -1,0 +1,1752 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;*------------------------------------------------------
+                       ----------------------
+    2 00000000         ;* Name:    Lab_2_program.s 
+    3 00000000         ;* Purpose: This code template is for Lab 2 on the Tiva 
+                       Board
+    4 00000000         ;* Author: Eric Praetzel
+    5 00000000         ;*
+    6 00000000         ;* Dec 2017
+    7 00000000         ;*------------------------------------------------------
+                       ----------------------*/
+    8 00000000         
+    9 00000000         ; The setup code is based upon InputOutput.s from the bo
+                       ok:
+   10 00000000         ;  "Embedded Systems: Introduction to ARM Cortex M Micro
+                       controllers"
+   11 00000000         ;  ISBN: 978-1469998749, Jonathan Valvano, copyright (c)
+                        2014
+   12 00000000         ;
+   13 00000000         
+   14 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   15 00000000                 THUMB
+   16 00000000                 EXPORT           Start
+   17 00000000         
+   18 00000000         ; One can define an address, or constant, using the EQUa
+                       te directive to make inputs and outputs easier to use
+   19 00000000         
+   20 00000000 00000002 
+                       RED     EQU              0x02        ; bit positions for
+                                                             the Tiva board LED
+                                                            s and switches all 
+                                                            on port F
+   21 00000000 00000004 
+                       BLUE    EQU              0x04
+   22 00000000 00000008 
+                       GREEN   EQU              0x08
+   23 00000000 00000010 
+                       SW1     EQU              0x10        ; switch on the lef
+                                                            t side of the Launc
+                                                            hpad board
+   24 00000000 00000001 
+                       SW2     EQU              0x01        ; switch on the rig
+                                                            ht side of the Laun
+                                                            chpad board
+   25 00000000         
+   26 00000000 0029F630 
+                       SOMEDELAY
+                               EQU              2750000     ; a faster than 500
+                                                            ms delay given the 
+                                                            ~16 MHz clock
+   27 00000000         
+   28 00000000         Start
+   29 00000000         
+   30 00000000         ; Init the Ports for use - this has the side effect of t
+                       urning off all LEDs 
+   31 00000000 F000 F872       BL               Port_Init   ; initialize input 
+                                                            and output pins of 
+                                                            the Ports used in E
+                                                            CE 222
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   32 00000004         
+   33 00000004 F04F 0300       MOV              R3, #0x00   ; load in the value
+                                                             to turn the RED le
+                                                            d OFF, RED LED is b
+                                                            it 1 (counting from
+                                                             0)
+   34 00000008 4C7E            LDR              R4, =GPIO_PORTF_DATA_R ; pointe
+                                                            r to Port F data re
+                                                            gister
+   35 0000000A 6023            STR              R3, [R4]    ; write data to Por
+                                                            t F to turn lights 
+                                                            on and off
+   36 0000000C         
+   37 0000000C         ; Demo how to use the speaker so it can be used as an op
+                       tional signaling or debugging tool
+   38 0000000C         
+   39 0000000C         ;MOV R1, #2     ; pass in a 2 to get a high pitched beep
+                       
+   40 0000000C         ;BL SpeakerBeep
+   41 0000000C         
+   42 0000000C         ;MOV R1, #30     ; pass in a 30 to get a lower pitched b
+                       eep
+   43 0000000C         ;BL SpeakerBeep
+   44 0000000C         
+   45 0000000C         ;MOV R1, #0     ; pass in a 0 to get NO BEEP but the tim
+                       e delay of a beep
+   46 0000000C         ;BL SpeakerBeep
+   47 0000000C         
+   48 0000000C         ;MOV R1, #3     ; pass in a 3 to get a high pitched beep
+                       
+   49 0000000C         ;BL SpeakerBeep
+   50 0000000C         
+   51 0000000C         
+   52 0000000C         ResetLUT
+   53 0000000C 4D7E            LDR              R5, =InputLUT ; assign R5 to th
+                                                            e character string 
+                                                            address: InputLUT
+   54 0000000E         
+   55 0000000E         NextChar
+   56 0000000E 7828            LDRB             R0, [R5]    ; Read a (byte) cha
+                                                            racter to convert t
+                                                            o a Morse pattern
+   57 00000010 F105 0501       ADD              R5, #1      ; point to next cha
+                                                            racter - increment 
+                                                            the pointer by 1 by
+                                                            te
+   58 00000014 F090 0F00       TEQ              R0, #0      ; test if we hit 0 
+                                                            (null at end of the
+                                                             string) then reset
+                                                             R5 to the start of
+                                                             character string
+   59 00000018 D104            BNE              ProcessChar ; If we have a char
+                                                            acter process it
+   60 0000001A         
+   61 0000001A         ; If we read the null at end of the string - add the end
+                        of string delay and then reset R5 to the start of chara
+                       cter string
+   62 0000001A         
+   63 0000001A F04F 0004       MOV              R0, #4      ; delay 4 extra spa
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+                                                            ces (7 total) betwe
+                                                            en words
+   64 0000001E F000 F830       BL               DELAY
+   65 00000022 D0F3            BEQ              ResetLUT    ; if the char is 0,
+                                                             then it has reache
+                                                            d the end of the st
+                                                            ring so start over
+   66 00000024         
+   67 00000024 F000 F811 
+                       ProcessChar
+                               BL               CHAR2MORSE  ; convert ASCII to 
+                                                            Morse pattern in R1
+                                                              
+   68 00000028         
+   69 00000028         ; In the shift operation the bit which is being lost, or
+                        pushed off the end of the register,
+   70 00000028         ; "falls" into the C flag - then one can BCC (Branch Car
+                       ry Clear) or BCS (Branch Carry Set) if the set was 0 or 
+                       1
+   71 00000028         
+   72 00000028         ; The Morse pattern has a variable number of leading zer
+                       os which must be removed to get to the Morse pattern 
+   73 00000028         ; One can use a loop, and peel off the leading 0's, unti
+                       l there is a 1 bit to send  (no code provided)
+   74 00000028         ;       The fastest way to do this is to count the numbe
+                       r of leading zeros (CLZ) and use a shift left operation 
+                       to remove those
+   75 00000028 FAB1 FB81       CLZ              R11, R1
+   76 0000002C FA01 F10B       LSL              R1, R11
+   77 00000030         
+   78 00000030         ;add code to remove leading zeros
+   79 00000030         
+   80 00000030         ; Now use left left shift operation to peel off one bit 
+                       at a time and turn the light on or off as necessary
+   81 00000030         
+   82 00000030         Shift_and_display
+   83 00000030 0049            LSLS             R1, R1, #1  ; shift R1 left by 
+                                                            1, because it's not
+                                                             LSL but LSLS the b
+                                                            it shifted off the 
+                                                            end goes into the C
+                                                             flag
+   84 00000032         ;next line wasn't originally there... above was original
+                       ly LSLS
+   85 00000032 BF38 F000 
+              F81E             BLCC             LED_OFF     ; go to FLAG if the
+                                                             CARRY bit is 0 ;Or
+                                                            iginally BEQ
+   86 00000038 BF28 F000 
+              F813             BLCS             LED_ON      ; go to LED_ON if t
+                                                            he CARRY bit is 1 ;
+                                                            Originally BNE
+   87 0000003E         
+   88 0000003E         ;BCC label1 ; branch somewhere it's zero because the Car
+                       ry flag is clear
+   89 0000003E         ;BCS label2 ; branch somewhere - it's not zero because t
+                       he Carry flag is set
+   90 0000003E         
+   91 0000003E         ;  NOTE: ARM math, logic and branch instructions can be 
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+                       conditional and conditional branches can all jump to a s
+                       ubroutine
+   92 0000003E         ;        So the above instructions could be BLCC and BLC
+                       S to conditionally branch to subroutines
+   93 0000003E         
+   94 0000003E         ;  Delay after the LED has been turned on or off
+   95 0000003E         ;  init R0 before calling DELAY to set how long to delay
+                       
+   96 0000003E F000 F820       BL               DELAY       ; **allow delay bef
+                                                            ore the other instr
+                                                            uction
+   97 00000042         
+   98 00000042 F091 0F00       TEQ              R1, #0x00
+   99 00000046 D028            BEQ              ENDOFLETTER ;if R8 is 0, go to 
+                                                            the next char ;if R
+                                                            1 is 0 go to next
+  100 00000048 D1F2            BNE              Shift_and_display ;if R8 is not
+                                                             0, shift to the ne
+                                                            xt bit in the binar
+                                                            y morse code; if R1
+                                                             is not 0
+  101 0000004A         
+  102 0000004A         ;BL DELAY ;This was inserted into LED_ON and LED_OFF
+  103 0000004A         ;UPDATE: THIS WAS INSERTED AS A SEPARATE SUBROUTINE
+  104 0000004A         
+  105 0000004A         ; NOTE: One interesting variation on this uses the fact 
+                       that the computer is much faster and our vision.  If the
+                        light is off, turned on
+  106 0000004A         ;  and turned off without a signif. time delay then the 
+                       user will never see the light turn on.  This fact can be
+                        used to shorten the code
+  107 0000004A         ;  which turns the lights on OR off
+  108 0000004A         
+  109 0000004A         ;  Now test R1 for zero to see if all bits are shifted a
+                       s the last bit is always a 1 and it's followed by 0'sA
+  110 0000004A         ;test R1 for 0 to see if we're done
+  111 0000004A         ; OR WE COULD HAVE A COUNTER CHECKING THE NUMBER OF BITS
+                        REMAINING
+  112 0000004A         
+  113 0000004A         ;  If we're not done then loop back to Shift_and_display
+                        to shift the next bit
+  114 0000004A         ;This is inserted into LED_ON and LED_OFF
+  115 0000004A         
+  116 0000004A         ;  If we're done then branch back to get the next charac
+                       ter
+  117 0000004A         ;B NextChar  ; This is the end of the main program 
+  118 0000004A         
+  119 0000004A         
+  120 0000004A         ;
+  121 0000004A         ; Additional Work - Use The Speaker
+  122 0000004A         ; 
+  123 0000004A         ;
+  124 0000004A         ; The SpeakerBeep routine can be used to BOTH be the tim
+                       e delay and create a sound
+  125 0000004A         ; Turning the LED on and off must also be done
+  126 0000004A         ; To control the time delay change the EQUate for Speake
+                       rBeepLength
+  127 0000004A         ;
+  128 0000004A         
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+  129 0000004A         
+  130 0000004A         
+  131 0000004A         ; Subroutines
+  132 0000004A         ;
+  133 0000004A         ;   convert ASCII character to Morse pattern
+  134 0000004A         ;   pass ASCII character in R0, output in R1
+  135 0000004A         ;   index into MorseLuT must be by steps of 2 bytes
+  136 0000004A         ;
+  137 0000004A         ; INPUT:  R0 ASCII character as a byte
+  138 0000004A         ; OUTPUT: R1 Morse Code pattern in the 16 lowest bits wi
+                       th the upper 16 bits cleared
+  139 0000004A         
+  140 0000004A B500    CHAR2MORSE
+                               STMFD            R13!,{R14}  ; push Link Registe
+                                                            r (return address) 
+                                                            on stack
+  141 0000004C         ;
+  142 0000004C         ;... add code here to convert the ASCII code to an index
+                        (subtract 41) and lookup the Morse patter in the Lookup
+                        Table
+  143 0000004C         ;
+  144 0000004C F1A0 0041       SUB              R0, #0x41   ; Subtract 41 from 
+                                                            ASCII value of char
+                                                            
+  145 00000050         
+  146 00000050 F04F 0C02       MOV              R12, #0x02  ; increment by 2 by
+                                                            tes
+  147 00000054 FB00 F00C       MUL              R0, R0, R12 ; calculate the off
+                                                            set from the addres
+                                                            s
+  148 00000058         
+  149 00000058 F8DF A1B0       LDR              R10, =MorseLUT ; read the morse
+                                                             patterm from the M
+                                                            orseLUT
+  150 0000005C 4482            ADD              R10, R0     ; Adds the offset t
+                                                            o the MorseLUT addr
+                                                            ess
+  151 0000005E         
+  152 0000005E F8BA 1000       LDRH             R1, [R10]   ; Loads the Morse B
+                                                            inary Code with the
+                                                             contents of R10 (a
+                                                            ddress of MorseLUT+
+                                                            offset)
+  153 00000062         
+  154 00000062 BD00            LDMFD            R13!,{R15}  ; restore LR to R15
+                                                             the Program Counte
+                                                            r to return
+  155 00000064         
+  156 00000064         
+  157 00000064         ; Turn the LED on, but deal with the stack in a simpler 
+                       way
+  158 00000064         ; NOTE: This method of returning from subroutine (BX  LR
+                       ) does NOT work if subroutines are nested!!
+  159 00000064         ;
+  160 00000064         ; INPUT:  none
+  161 00000064         ; OUTPUT:  none
+  162 00000064         ;
+  163 00000064 B418    LED_ON  STMFD            R13!,{R3, R4} ; preserve R3 and
+                                                             R4 on the stacked 
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+                                                            pointed to by R13
+  164 00000066         ;... insert your code here
+  165 00000066 F04F 0302       MOV              R3, #0x02   ; **put the value f
+                                                            or RED LED into R3
+  166 0000006A 6023            STR              R3, [R4]    ; **store contents 
+                                                            of R1 into R3 to tu
+                                                            rn LED on
+  167 0000006C F04F 0001       MOV              R0, #0x1
+  168 00000070 BC18            LDMFD            R13!,{R3, R4} ; restore R3 and 
+                                                            R4 before returning
+                                                            
+  169 00000072 4770            BX               LR          ; branch to the add
+                                                            ress in the Link Re
+                                                            gister.  Ie return 
+                                                            to the caller
+  170 00000074         
+  171 00000074         ; Turn the LED off, but deal with the stack in the prope
+                       r way
+  172 00000074         ; the Link register gets pushed onto the stack so that s
+                       ubroutines can be nested
+  173 00000074         ;
+  174 00000074         ; INPUT:  none
+  175 00000074         ; OUTPUT:  none
+  176 00000074         ;
+  177 00000074 B508    LED_OFF STMFD            R13!,{R3, R14} ; push R3 and Li
+                                                            nk Register (return
+                                                             address) on stack
+  178 00000076         ;... insert your code here
+  179 00000076 F04F 0300       MOV              R3, #0x00   ; **put #0x00 into 
+                                                            R3 to turn the LED 
+                                                            off
+  180 0000007A 6023            STR              R3, [R4]    ; **store contents 
+                                                            of R1 into R3 to tu
+                                                            rn the LED off
+  181 0000007C F04F 0001       MOV              R0, #0x1
+  182 00000080 BD08            LDMFD            R13!,{R3, R15} ; restore R3 and
+                                                             LR to R15 the Prog
+                                                            ram Counter to retu
+                                                            rn
+  183 00000082         
+  184 00000082         ; Delay 500ms * R0 times
+  185 00000082         ; Use a modified delay loop from Lab-1
+  186 00000082         ;
+  187 00000082         ; INPUT:  R0 - how many times is the basic time loop run
+                       ? 0 means none and just exit without any delay
+  188 00000082         ; OUTPUT:  none
+  189 00000082         ;
+  190 00000082 B504    DELAY   STMFD            R13!,{R2, R14}
+  191 00000084         
+  192 00000084 F090 0F00 
+                       MultipleDelay
+                               TEQ              R0, #0      ; test R0 to see if
+                                                             it's 0 and if so e
+                                                            xit - this sets the
+                                                             Zero flag so you c
+                                                            an use BEQ, BNE
+  193 00000088         ;... insert your code here
+  194 00000088 F8DF A184       LDR              R10, =SOMEDELAY ; R0 is initial
+                                                            ized to a value to 
+
+
+
+ARM Macro Assembler    Page 7 
+
+
+                                                            give a 500ms delay
+  195 0000008C         
+  196 0000008C         loop1
+  197 0000008C F1BA 0A01       SUBS             R10, R10, #1 ; R0 = R0 - 1 (cou
+                                                            nt = count - 1) and
+                                                             set N, Z, C status
+                                                             bits
+  198 00000090         ; Note: For SUBs the "s" suffix means to set the status 
+                       bits, without this the loops would not exit
+  199 00000090 D1FC            BNE              loop1       ; If the R10/counte
+                                                            r is not 0, keep de
+                                                            creasing
+  200 00000092 3801            SUBS             R0, #1      ; Decrement the val
+                                                            ue of R0 (loop coun
+                                                            ter)
+  201 00000094 D000            BEQ              exitDelay   ; If R0 is 0, we do
+                                                            n't have to loop ag
+                                                            ain
+  202 00000096 D1F5            BNE              MultipleDelay ; If R0 is NOT 0,
+                                                             we need to go back
+                                                             to loop1
+  203 00000098         
+  204 00000098 BD04    exitDelay
+                               LDMFD            R13!,{R2, R15}
+  205 0000009A         
+  206 0000009A         ENDOFLETTER
+  207 0000009A F04F 0300       MOV              R3, #0x00   ; **put #0x00 into 
+                                                            R3 to turn the LED 
+                                                            off
+  208 0000009E 6023            STR              R3, [R4]    ; **store contents 
+                                                            of R1 into R3 to tu
+                                                            rn the LED off
+  209 000000A0 F04F 0003       MOV              R0, #3
+  210 000000A4 F7FF FFED       BL               DELAY
+  211 000000A8 E7B1            B                NextChar
+  212 000000AA         ;
+  213 000000AA         ; Data used in the Morse Code program
+  214 000000AA         ;
+  215 000000AA         ; DCB is Define Constant Byte size
+  216 000000AA         ; DCW is Define Constant Word (16-bit) size
+  217 000000AA         ; EQU is EQUate or assign a value.  This uses no memory 
+                       but instead of typing the same address in many places on
+                       e can just use an EQU to then use a label
+  218 000000AA         ;
+  219 000000AA         
+  220 000000AA         ; One way to provide a data to convert to Morse code is 
+                       to use a string in memory.
+  221 000000AA         ; Simply read bytes of the string until the NULL or "0" 
+                       is hit.  This makes it very easy to loop until done.
+  222 000000AA         ;
+  223 000000AA 00 00           ALIGN                        ; make sure things 
+                                                            fall on word addres
+                                                            ses
+  224 000000AC 56 42 4E 
+              53 41 00 InputLUT
+                               DCB              "VBNSA", 0  ; strings must be s
+                                                            tored, and read, as
+                                                             BYTES
+  225 000000B2         ; Read the bytes of the string until the "0" is reached
+
+
+
+ARM Macro Assembler    Page 8 
+
+
+  226 000000B2 00 00           ALIGN                        ; make sure things 
+                                                            fall on word addres
+                                                            ses
+  227 000000B4         MorseLUT
+  228 000000B4 17 00 D5 
+              01 5D 07 
+              75 00            DCW              0x17, 0x1D5, 0x75D, 0x75 
+                                                            ; A, B, C, D
+  229 000000BC 01 00 5D 
+              01 DD 01 
+              55 00            DCW              0x1, 0x15D, 0x1DD, 0x55 
+                                                            ; E, F, G, H
+  230 000000C4 05 00 77 
+              17 D7 01 
+              75 01            DCW              0x5, 0x1777, 0x1D7, 0x175 
+                                                            ; I, J, K, L
+  231 000000CC 77 00 1D 
+              00 77 07 
+              DD 05            DCW              0x77, 0x1D, 0x777, 0x5DD 
+                                                            ; M, N, O, P
+  232 000000D4 D7 1D 5D 
+              00 15 00 
+              07 00            DCW              0x1DD7, 0x5D, 0x15, 0x7 
+                                                            ; Q, R, S, T
+  233 000000DC 57 00 57 
+              01 77 01 
+              57 07            DCW              0x57, 0x157, 0x177, 0x757 
+                                                            ; U, V, W, X
+  234 000000E4 77 1D 75 
+              07               DCW              0x1D77, 0x775 ; Y, Z
+  235 000000E8         
+  236 000000E8         
+  237 000000E8         
+  238 000000E8         ; * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+                       * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+                       * * * * * * * * * 
+  239 000000E8         ;   DO NOT EDIT CODE BELOW THIS LINE
+  240 000000E8         ; * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+                       * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+                       * * * * * * * * * 
+  241 000000E8         ; Tons of initialization to be done in order to use the 
+                       I/O ports as they're off by default.
+  242 000000E8         ;
+  243 000000E8         ; Define the addresses and provide functions to initiali
+                       ze everything.
+  244 000000E8         
+  245 000000E8 40025400 
+                       GPIO_PORTF_DIR_R
+                               EQU              0x40025400  ; Port F Data Direc
+                                                            tion Register setti
+                                                            ng pins as input or
+                                                             output
+  246 000000E8 400253FC 
+                       GPIO_PORTF_DATA_R
+                               EQU              0x400253FC  ; address for readi
+                                                            ng button inputs an
+                                                            d writing to LEDs
+  247 000000E8 40025420 
+                       GPIO_PORTF_AFSEL_R
+
+
+
+ARM Macro Assembler    Page 9 
+
+
+                               EQU              0x40025420
+  248 000000E8 40025510 
+                       GPIO_PORTF_PUR_R
+                               EQU              0x40025510
+  249 000000E8 4002551C 
+                       GPIO_PORTF_DEN_R
+                               EQU              0x4002551C
+  250 000000E8 40025520 
+                       GPIO_PORTF_LOCK_R
+                               EQU              0x40025520
+  251 000000E8 40025524 
+                       GPIO_PORTF_CR_R
+                               EQU              0x40025524
+  252 000000E8 40025528 
+                       GPIO_PORTF_AMSEL_R
+                               EQU              0x40025528
+  253 000000E8 4002552C 
+                       GPIO_PORTF_PCTL_R
+                               EQU              0x4002552C
+  254 000000E8         
+  255 000000E8         ;Section 3.1.2 Nested Vector Interrupt Controller
+  256 000000E8         
+  257 000000E8         ;The Cortex-M4F processor supports interrupts and system
+                        exceptions. The processor and the
+  258 000000E8         ;Nested Vectored Interrupt Controller (NVIC) prioritize 
+                       and handle all exceptions. An exception
+  259 000000E8         ;changes the normal flow of software control. The proces
+                       sor uses Handler mode to handle all
+  260 000000E8         ;exceptions except for reset. See �Exception Entry and
+                        Return� on page 108 for more information.
+  261 000000E8         ;The NVIC registers control interrupt handling. See �N
+                       ested Vectored Interrupt Controller
+  262 000000E8         ;(NVIC)� on page 124 for more information.
+  263 000000E8         
+  264 000000E8         ;Table 3-8 on page 134 details interrupt Set / Clear 
+  265 000000E8         ; they allow one to enable individual interrupts and DIS
+                       ? lets one disable individual interrupt numbers
+  266 000000E8         
+  267 000000E8         ; Table 2-9 Interrupts on page 104 details interrupt num
+                       ber / bit assignments
+  268 000000E8         ; Port F - Bit 30
+  269 000000E8         ; Timer 0A Bit 19
+  270 000000E8         ; Timer 0B Bit 20
+  271 000000E8         
+  272 000000E8         ;For edge-triggered interrupts, software must clear the 
+                       interrupt to enable any further interrupts.
+  273 000000E8         
+  274 000000E8         ; NOTE: The NMI (non-maskable interrupt) is on PF0.  Tha
+                       t means that
+  275 000000E8         ; the Alternate Function Select, Pull-Up Resistor, Pull-
+                       Down Resistor,
+  276 000000E8         ; and Digital Enable are all locked for PF0 until a valu
+                       e of 0x4C4F434B
+  277 000000E8         ; is written to the Port F GPIO Lock Register.  After Po
+                       rt F is
+  278 000000E8         ; unlocked, bit 0 of the Port F GPIO Commit Register mus
+                       t be set to
+  279 000000E8         ; allow access to PF0's control registers.  On the LM4F1
+                       20, the other
+
+
+
+ARM Macro Assembler    Page 10 
+
+
+  280 000000E8         ; bits of the Port F GPIO Commit Register are hard-wired
+                        to 1, meaning
+  281 000000E8         ; that the rest of Port F can always be freely re-config
+                       ured at any
+  282 000000E8         ; time.  Requiring this procedure makes it unlikely to a
+                       ccidentally
+  283 000000E8         ; re-configure the JTAG and NMI pins as GPIO, which can 
+                       lock the
+  284 000000E8         ; debugger out of the processor and make it permanently 
+                       unable to be
+  285 000000E8         ; debugged or re-programmed.
+  286 000000E8         
+  287 000000E8         ; These are the configuration registers which should not
+                        be touched
+  288 000000E8         ; Port Base addresses for the legacy (not high-performan
+                       ce) interface to I/O ports
+  289 000000E8 40004000 
+                       GPIO_PORTA
+                               EQU              0x40004000
+  290 000000E8 40005000 
+                       GPIO_PORTB
+                               EQU              0x40005000
+  291 000000E8 40006000 
+                       GPIO_PORTC
+                               EQU              0x40006000
+  292 000000E8 40007000 
+                       GPIO_PORTD
+                               EQU              0x40007000
+  293 000000E8 40024000 
+                       GPIO_PORTE
+                               EQU              0x40024000
+  294 000000E8 40025000 
+                       GPIO_PORTF
+                               EQU              0x40025000
+  295 000000E8         
+  296 000000E8         ; WARNING outputs PD0 & PD1 are shorted to PB6 and PB7 -
+                        one pair MUST BE INPUTS!! - we disable D0, D1
+  297 000000E8         
+  298 000000E8         ; These are the masks for pins which are outputs, settin
+                       g a bit to 1 makes the pin an output, 0 is input
+  299 000000E8 000000FC 
+                       PORT_A_MASK
+                               EQU              0xfc        ; PA7,6,5,4,3,2 are
+                                                             outputs for 7-segm
+                                                            ent LEDs
+  300 000000E8 000000FD 
+                       PORT_B_MASK
+                               EQU              0xfd        ; PB7,6,5,4,3,2,0 a
+                                                            re LEDs
+  301 000000E8 00000030 
+                       PORT_C_MASK
+                               EQU              0x30        ; this breaks progr
+                                                            amming the CPU - DO
+                                                             NOT ENABLE 
+  302 000000E8 000000CC 
+                       PORT_D_MASK
+                               EQU              0xcc        ; PD7,6,3,2  Disabl
+                                                            e D0, D1 due to sho
+                                                            rt with B6, B7
+
+
+
+ARM Macro Assembler    Page 11 
+
+
+  303 000000E8 00000037 
+                       PORT_E_MASK
+                               EQU              0x37        ; PE0,1,2,4,5 are u
+                                                            sed for 7-segment, 
+                                                            LED & speaker
+  304 000000E8 0000000E 
+                       PORT_F_MASK
+                               EQU              0x0e        ; PF has LEDs on PF
+                                                            1,2,3 and buttons P
+                                                            F0, PF4 (don't enab
+                                                            le buttons as outpu
+                                                            ts)
+  305 000000E8         
+  306 000000E8         ; Offsets are from table 10-6 on page 660
+  307 000000E8 00000000 
+                       GPIO_DATA_OFFSET
+                               EQU              0x000       ; Data address is t
+                                                            he base address - Y
+                                                            OU HAVE TO ADD AN A
+                                                            DDRESS MASK TOO to 
+                                                            read or write this!
+                                                            !
+  308 000000E8 00000400 
+                       GPIO_DIR_OFFSET
+                               EQU              0x400       ; Direction registe
+                                                            r
+  309 000000E8 00000420 
+                       GPIO_AFSEL_OFFSET
+                               EQU              0x420       ; Alternate Functio
+                                                            n SELection
+  310 000000E8 00000510 
+                       GPIO_PUR_OFFSET
+                               EQU              0x510       ; Pull Up Resistors
+                                                            
+  311 000000E8 0000051C 
+                       GPIO_DEN_OFFSET
+                               EQU              0x51C       ; Digital ENable
+  312 000000E8 00000520 
+                       GPIO_LOCK_OFFSET
+                               EQU              0x520
+  313 000000E8 00000524 
+                       GPIO_CR_OFFSET
+                               EQU              0x524
+  314 000000E8 00000528 
+                       GPIO_AMSEL_OFFSET
+                               EQU              0x528       ; Analog Mode SELec
+                                                            t
+  315 000000E8 0000052C 
+                       GPIO_PCTL_OFFSET
+                               EQU              0x52C
+  316 000000E8         
+  317 000000E8 400FE06C 
+                       SYSCTL_HBCTL
+                               EQU              0x400FE06C  ; high performance 
+                                                            bus control for por
+                                                            ts A to F
+  318 000000E8         
+  319 000000E8 4C4F434B 
+                       GPIO_LOCK_KEY
+
+
+
+ARM Macro Assembler    Page 12 
+
+
+                               EQU              0x4C4F434B  ; Unlocks the GPIO_
+                                                            CR register
+  320 000000E8 400FE608 
+                       SYSCTL_RCGCGPIO_R
+                               EQU              0x400FE608  ; Register to enabl
+                                                            e clocks to the I/O
+                                                             port hardware
+  321 000000E8         
+  322 000000E8                 ALIGN                        ; make sure things 
+                                                            fall on word addres
+                                                            ses
+  323 000000E8         
+  324 000000E8         ;------------Port_Init------------
+  325 000000E8         ; Initialize GPIO Port F for negative logic switches on 
+                       PF0 and
+  326 000000E8         ; PF4 as the Launchpad is wired.  Weak internal pull-up
+  327 000000E8         ; resistors are enabled, and the NMI functionality on PF
+                       0 is
+  328 000000E8         ; disabled.  Make the RGB LED's pins outputs.
+  329 000000E8         ; Input: none
+  330 000000E8         ; Output: none
+  331 000000E8         ; Modifies: R0, R1, R2, R3
+  332 000000E8         Port_Init
+  333 000000E8 B500            STMFD            R13!,{R14}  ; push the LR or re
+                                                            turn address
+  334 000000EA         
+  335 000000EA         ; First enable the clock to the I/O ports, by default th
+                       e clocks are off to save power
+  336 000000EA         ; If a clock is not enabled to a port and you access it 
+                       - then the processor hard faults
+  337 000000EA 494A            LDR              R1, =SYSCTL_RCGCGPIO_R ; activa
+                                                            te clock for Ports 
+                                                            (see page 340)
+  338 000000EC 6808            LDR              R0, [R1]
+  339 000000EE F040 003F       ORR              R0, R0, #0x3F ; turn on clock t
+                                                            o all 6 ports (A to
+                                                             F, bits 0 to 5)
+  340 000000F2 6008            STR              R0, [R1]
+  341 000000F4 BF00            NOP
+  342 000000F6 BF00            NOP                          ; allow time for cl
+                                                            ock to finish
+  343 000000F8         
+  344 000000F8         ; Set all ports to APB bus instead of AHB - this should 
+                       be unnecessary
+  345 000000F8         ; LDR R1, =SYSCTL_HBCTL
+  346 000000F8         ; LDR R0, [R1]
+  347 000000F8         ; AND R0, #0xFFFFFFE0  ; set Ports A thru F to APB (0) a
+                       nd leave the rest at their default
+  348 000000F8         ; STR R0, [R1]
+  349 000000F8         
+  350 000000F8         ; Page 650, Table 10-1 GPIO Pins with Special Considerat
+                       ions.
+  351 000000F8         ; These pins must be left as configured after reset:
+  352 000000F8         ;  PA[5:0] (UART0 and SSIO), PB[3:2] (I2C), PC[3:0] (JTA
+                       G)
+  353 000000F8         
+  354 000000F8         ; Initialize the I/O ports A, B, E, F via a common subro
+                       utine Port_Init_Individual
+  355 000000F8         ; Call Port_Init_Individual with the following paramater
+
+
+
+ARM Macro Assembler    Page 13 
+
+
+                       s passed:
+  356 000000F8         ; R1 is the base port address
+  357 000000F8         ; R2 is the output pin mask (which bits are outputs)
+  358 000000F8         ; R3 is the input pin mask  (which bits get configured a
+                       s inputs)
+  359 000000F8         
+  360 000000F8 F04F 0300       MOV              R3, #0x00   ; Select no pins as
+                                                             input (unless it's
+                                                             changed as for por
+                                                            t F)
+  361 000000FC         
+  362 000000FC         ; Init Port A, B, E are by default GPIO - set all output
+                        pins used to a 1 to enable them
+  363 000000FC         ;   and leave all of the other pins as previously config
+                       ured!
+  364 000000FC F04F 2140       LDR              R1, =GPIO_PORTA
+  365 00000100 F04F 02FC       MOV              R2, #PORT_A_MASK ; enable commi
+                                                            t for Port, 1 means
+                                                             allow access
+  366 00000104 F000 F81A       BL               Port_Init_Individual
+  367 00000108         
+  368 00000108         ; Init Port B
+  369 00000108 4943            LDR              R1, =GPIO_PORTB
+  370 0000010A F04F 02FD       MOV              R2, #PORT_B_MASK ; enable commi
+                                                            t for Port, 1 means
+                                                             allow access
+  371 0000010E F000 F815       BL               Port_Init_Individual
+  372 00000112         
+  373 00000112         ; Init Port C
+  374 00000112 4942            LDR              R1, =GPIO_PORTC
+  375 00000114 F04F 0230       MOV              R2, #PORT_C_MASK
+  376 00000118         ;BL Port_Init_Individual
+  377 00000118         
+  378 00000118         ; Init Port D
+  379 00000118 4941            LDR              R1, =GPIO_PORTD
+  380 0000011A F04F 02CC       MOV              R2, #PORT_D_MASK
+  381 0000011E F000 F80D       BL               Port_Init_Individual
+  382 00000122         
+  383 00000122         ; Init Port E
+  384 00000122 4940            LDR              R1, =GPIO_PORTE
+  385 00000124 F04F 0237       MOV              R2, #PORT_E_MASK ; enable commi
+                                                            t for Port, 1 means
+                                                             allow access
+  386 00000128 F000 F808       BL               Port_Init_Individual
+  387 0000012C         
+  388 0000012C         ; Init Port F
+  389 0000012C 493E            LDR              R1, =GPIO_PORTF
+  390 0000012E F04F 020E       MOV              R2, #PORT_F_MASK ; enable commi
+                                                            t for Port, 1 means
+                                                             allow access
+  391 00000132 F04F 0311       MOV              R3, #0x11   ; enable weak pull-
+                                                            up on PF0 and PF4 (
+                                                            buttons)
+  392 00000136 F000 F801       BL               Port_Init_Individual
+  393 0000013A         
+  394 0000013A BD00            LDMFD            R13!,{R15}  ; pull the LR or re
+                                                            turn address from t
+                                                            he stack and return
+                                                            
+
+
+
+ARM Macro Assembler    Page 14 
+
+
+  395 0000013C         
+  396 0000013C         
+  397 0000013C         ;------------Port_Init_Individual------------
+  398 0000013C         ; Initialize one GPIO Port with select bits as inputs an
+                       d outputs
+  399 0000013C         ; Output: none
+  400 0000013C         ; Input: R1, R2, R3
+  401 0000013C         ; R1 has to be the port address
+  402 0000013C         ; R2 has to hold the mask for output pins
+  403 0000013C         ; R3 has to be the mask for input pins
+  404 0000013C         ; Modifies: R0
+  405 0000013C         
+  406 0000013C         Port_Init_Individual
+  407 0000013C B500            STMFD            R13!,{R14}  ; push the LR or re
+                                                            turn address
+  408 0000013E 483B            LDR              R0, =0x4C4F434B ; unlock GPIO P
+                                                            ort F Commit Regist
+                                                            er
+  409 00000140 F8C1 0520       STR              R0, [R1, #GPIO_LOCK_OFFSET] ; 2
+                                                            ) unlock the lock r
+                                                            egister
+  410 00000144 EA42 0003       ORR              R0, R2, R3  ; all access to inp
+                                                            uts and outputs as 
+                                                            masked in R2 and R3
+                                                            
+  411 00000148 F8C1 0524       STR              R0, [R1, #GPIO_CR_OFFSET] ; ena
+                                                            ble commit for Port
+                                                             F
+  412 0000014C F04F 0000       MOV              R0, #0      ; 0 means analog is
+                                                             off
+  413 00000150 F8C1 0528       STR              R0, [R1, #GPIO_AMSEL_OFFSET] ; 
+                                                            3) disable analog f
+                                                            unctionality
+  414 00000154 F04F 0000       MOV              R0, #0x00000000 ; 0 means confi
+                                                            gure Port F as GPIO
+                                                            
+  415 00000158 F8C1 052C       STR              R0, [R1, #GPIO_PCTL_OFFSET] ; 4
+                                                            ) configure as GPIO
+                                                            
+  416 0000015C F8D1 0400       LDR              R0, [R1, #GPIO_DIR_OFFSET] ; 5)
+                                                             read default direc
+                                                            tion register confi
+                                                            guration
+  417 00000160 EA40 0002       ORR              R0, R2      ; ORR in only the b
+                                                            its we want as outp
+                                                            uts
+  418 00000164 F8C1 0400       STR              R0, [R1, #GPIO_DIR_OFFSET] ; 5)
+                                                             set direction regi
+                                                            ster
+  419 00000168 F04F 0000       MOV              R0, #0      ; 0 means disable a
+                                                            lternate function 
+  420 0000016C F8C1 0420       STR              R0, [R1, #GPIO_AFSEL_OFFSET] ; 
+                                                            6) regular port fun
+                                                            ction
+  421 00000170 F8C1 3510       STR              R3, [R1, #GPIO_PUR_OFFSET] ; pu
+                                                            ll-up resistors for
+                                                             PF4,PF0
+  422 00000174 F04F 00FF       MOV              R0, #0xFF   ; 1 means enable di
+                                                            gital I/O
+
+
+
+ARM Macro Assembler    Page 15 
+
+
+  423 00000178 F8C1 051C       STR              R0, [R1, #GPIO_DEN_OFFSET]
+  424 0000017C BD00            LDMFD            R13!,{R15}  ; pull the LR or re
+                                                            turn address and re
+                                                            turn
+  425 0000017E         
+  426 0000017E         
+  427 0000017E         ; Beep the speaker on the ECE Shield using port E4 and E
+                       5
+  428 0000017E         ; The speaker is conencted to two pins - toggle each end
+                        for more volume than a singled ended drive
+  429 0000017E         ;
+  430 0000017E         ; Each beep, sounded or not, is about the same length - 
+                       0x300 loops of delay loop
+  431 0000017E         ;
+  432 0000017E         ; Input: R1 sets the tone - 0 is NO BEEP,
+  433 0000017E         ;                           1 is a high pitch beep and l
+                       arger numbers are lower pitched
+  434 0000017E         ; Output: none
+  435 0000017E         
+  436 0000017E 00000300 
+                       SpeakerBeepLength
+                               EQU              0x300       ; the length of the
+                                                             speaker beep
+  437 0000017E         
+  438 0000017E         SpeakerBeep
+  439 0000017E E92D 481E       STMFD            R13!,{R1-R4, R11, R14} ; push t
+                                                            he LR or return add
+                                                            ress
+  440 00000182         
+  441 00000182 F04F 0430       MOV              R4, #0x30   ; This xor'd with t
+                                                            he port holding the
+                                                             speaker pins will 
+                                                            create a beep
+  442 00000186 F091 0F00       TEQ              R1, #0      ; If R1 = 0 then ju
+                                                            st delay but do not
+                                                             beep
+  443 0000018A D103            BNE              make_a_sound
+  444 0000018C F04F 0101       MOV              R1, #1      ; stick a valid val
+                                                            ue into R1 as 0 wil
+                                                            l divide by 0
+  445 00000190 F04F 0400       MOV              R4, #0x0    ; setting R4 to 0 w
+                                                            ill ensure that no 
+                                                            beep will sound
+  446 00000194         make_a_sound
+  447 00000194 F44F 7340       MOV              R3, #SpeakerBeepLength ; how ma
+                                                            ny loops of the bee
+                                                            p delay do we do?  
+                                                            Ie how long is the 
+                                                            beep
+  448 00000198 FBB3 F3F1       UDIV             R3, R1      ; loop the tone R1 
+                                                            / R3 times to ensur
+                                                            e a total of 0x100 
+                                                            delays for all tone
+                                                            s
+  449 0000019C         
+  450 0000019C 4A24            LDR              R2, =GPIO_PORTE + (PORT_E_MASK 
+<< 2)
+  451 0000019E F8D2 B000       LDR              R11, [R2, #GPIO_DATA_OFFSET] ; 
+                                                            get the initial val
+
+
+
+ARM Macro Assembler    Page 16 
+
+
+                                                            ue - read-modify-wr
+                                                            ite to only change 
+                                                            2 bits
+  452 000001A2 F00B 0BCF       AND              R11, #0xcf  ; clear two bits th
+                                                            at the speaker is o
+                                                            n
+  453 000001A6 F04B 0B10       ORR              R11, #0x10  ; initial speaker o
+                                                            utput (one side hig
+                                                            h 0x10, the other l
+                                                            ow 0x20)
+  454 000001AA         buzz_loop
+  455 000001AA F000 F80E       BL               ShortDelay  ; delay
+  456 000001AE EA8B 0B04       EOR              R11, R4     ; xor to toggle the
+                                                             two speaker pins t
+                                                            o create a beep
+  457 000001B2 F8C2 B000       STR              R11, [R2, #GPIO_DATA_OFFSET]
+  458 000001B6 3B01            SUBS             R3, #1
+  459 000001B8 D1F7            BNE              buzz_loop
+  460 000001BA         ; now power down the speaker
+  461 000001BA F8D2 B000       LDR              R11, [R2, #GPIO_DATA_OFFSET] ; 
+                                                            restore the speaker
+                                                             pins to 0V each
+  462 000001BE F00B 0BCF       AND              R11, #0xcf  ; clear two bits th
+                                                            at the speaker is o
+                                                            n
+  463 000001C2 F8C2 B000       STR              R11, [R2, #GPIO_DATA_OFFSET]
+  464 000001C6         
+  465 000001C6 E8BD 881E       LDMFD            R13!,{R1-R4, R11, R15} ; pull t
+                                                            he LR or return add
+                                                            ress and return
+  466 000001CA         
+  467 000001CA         ; ShortDelay subroutine - delay for a fixed amount of ti
+                       me
+  468 000001CA         ;
+  469 000001CA         ; This is a crap piece of code - only use it as an examp
+                       le for what never to do!!
+  470 000001CA         ;
+  471 000001CA         ; Input: R1 - how many times we repeat the fixed short d
+                       elay
+  472 000001CA         ; Output: none
+  473 000001CA         
+  474 000001CA 00000190 
+                       SHORTDELAYCOUNT
+                               EQU              400         ; faction of a seco
+                                                            nd delay
+  475 000001CA         
+  476 000001CA         ShortDelay
+  477 000001CA B503            STMFD            R13!,{R0, R1, R14} ; push the L
+                                                            R or return address
+                                                            
+  478 000001CC         
+  479 000001CC         delay_outer_loop
+  480 000001CC F091 0F00       TEQ              R1, #0
+  481 000001D0 D100            BNE              not_done_delay
+  482 000001D2 E007            B                done_delay
+  483 000001D4         not_done_delay
+  484 000001D4 F1A1 0101       SUB              R1, #1
+  485 000001D8 F44F 70C8       LDR              R0, =SHORTDELAYCOUNT ; R0 = a v
+                                                            alue to get about a
+
+
+
+ARM Macro Assembler    Page 17 
+
+
+                                                             second delay
+  486 000001DC         delay_loop
+  487 000001DC 1E40            SUBS             R0, R0, #1  ; R0 = R0 - 1 (coun
+                                                            t = count - 1) and 
+                                                            set N, Z, C status 
+                                                            bits
+  488 000001DE         ; Note: For SUBs the "s" suffix means to set the status 
+                       bits, without this the loops would not exit
+  489 000001DE B900            CBNZ             R0, delay_back ; compare if not
+                                                             zero then keep cou
+                                                            nting down
+  490 000001E0 E7F4            B                delay_outer_loop
+  491 000001E2         delay_back
+  492 000001E2 E7FB            B                delay_loop
+  493 000001E4         done_delay
+  494 000001E4 BD03            LDMFD            R13!,{R0, R1, R15} ; pull the L
+                                                            R or return address
+                                                             and return
+  495 000001E6         
+  496 000001E6 00 00           ALIGN
+  497 000001E8         
+  498 000001E8         Port_Table
+  499 000001E8 400043F0        DCD              GPIO_PORTA + (PORT_A_MASK << 2)
+ 
+                                                            ; DCD - Define Cons
+                                                            tant Double Word (3
+                                                            2-bits)
+  500 000001EC 400053F4 
+              400060C0         DCD              GPIO_PORTB + (PORT_B_MASK << 2)
+, GPIO_PORTC + (PORT_C_MASK << 2)
+  501 000001F4 40007330 
+              400240DC         DCD              GPIO_PORTD + (PORT_D_MASK << 2)
+, GPIO_PORTE + (PORT_E_MASK << 2)
+  502 000001FC 40025038 
+              00000000         DCD              GPIO_PORTF + (PORT_F_MASK << 2)
+, 0
+  503 00000204         
+  504 00000204                 ALIGN                        ; make sure the end
+                                                             of this section is
+                                                             aligned
+  505 00000204                 END                          ; end of file - not
+                                                            hing after this is 
+                                                            assembled
+              400253FC 
+              00000000 
+              00000000 
+              0029F630 
+              400FE608 
+              40005000 
+              40006000 
+              40007000 
+              40024000 
+              40025000 
+              4C4F434B 
+              400240DC 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=.\objects\lab2_tiva_template.d -o.\objects\lab2_tiva_template.o
+ -I.\RTE\_Target_1 -IC:\Users\navey\AppData\Local\Keil\TM4C_DFP\1.1.0\Device\In
+clude\TM4C123 -IC:\Keil_v5\ARM\CMSIS\Include --predefine="__EVAL SETA 1" --pred
+
+
+
+ARM Macro Assembler    Page 18 
+
+
+efine="__UVISION_VERSION SETA 528" --predefine="TM4C123GH6PM SETA 1" --list=.\l
+istings\lab2_tiva_template.lst lab2_tiva_template.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 14 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: .text unused
+CHAR2MORSE 0000004A
+
+Symbol: CHAR2MORSE
+   Definitions
+      At line 140 in file lab2_tiva_template.s
+   Uses
+      At line 67 in file lab2_tiva_template.s
+Comment: CHAR2MORSE used once
+DELAY 00000082
+
+Symbol: DELAY
+   Definitions
+      At line 190 in file lab2_tiva_template.s
+   Uses
+      At line 64 in file lab2_tiva_template.s
+      At line 96 in file lab2_tiva_template.s
+      At line 210 in file lab2_tiva_template.s
+
+ENDOFLETTER 0000009A
+
+Symbol: ENDOFLETTER
+   Definitions
+      At line 206 in file lab2_tiva_template.s
+   Uses
+      At line 99 in file lab2_tiva_template.s
+Comment: ENDOFLETTER used once
+InputLUT 000000AC
+
+Symbol: InputLUT
+   Definitions
+      At line 224 in file lab2_tiva_template.s
+   Uses
+      At line 53 in file lab2_tiva_template.s
+Comment: InputLUT used once
+LED_OFF 00000074
+
+Symbol: LED_OFF
+   Definitions
+      At line 177 in file lab2_tiva_template.s
+   Uses
+      At line 85 in file lab2_tiva_template.s
+Comment: LED_OFF used once
+LED_ON 00000064
+
+Symbol: LED_ON
+   Definitions
+      At line 163 in file lab2_tiva_template.s
+   Uses
+      At line 86 in file lab2_tiva_template.s
+Comment: LED_ON used once
+MorseLUT 000000B4
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+
+Symbol: MorseLUT
+   Definitions
+      At line 227 in file lab2_tiva_template.s
+   Uses
+      At line 149 in file lab2_tiva_template.s
+Comment: MorseLUT used once
+MultipleDelay 00000084
+
+Symbol: MultipleDelay
+   Definitions
+      At line 192 in file lab2_tiva_template.s
+   Uses
+      At line 202 in file lab2_tiva_template.s
+Comment: MultipleDelay used once
+NextChar 0000000E
+
+Symbol: NextChar
+   Definitions
+      At line 55 in file lab2_tiva_template.s
+   Uses
+      At line 211 in file lab2_tiva_template.s
+Comment: NextChar used once
+Port_Init 000000E8
+
+Symbol: Port_Init
+   Definitions
+      At line 332 in file lab2_tiva_template.s
+   Uses
+      At line 31 in file lab2_tiva_template.s
+Comment: Port_Init used once
+Port_Init_Individual 0000013C
+
+Symbol: Port_Init_Individual
+   Definitions
+      At line 406 in file lab2_tiva_template.s
+   Uses
+      At line 366 in file lab2_tiva_template.s
+      At line 371 in file lab2_tiva_template.s
+      At line 381 in file lab2_tiva_template.s
+      At line 386 in file lab2_tiva_template.s
+      At line 392 in file lab2_tiva_template.s
+
+Port_Table 000001E8
+
+Symbol: Port_Table
+   Definitions
+      At line 498 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: Port_Table unused
+ProcessChar 00000024
+
+Symbol: ProcessChar
+   Definitions
+      At line 67 in file lab2_tiva_template.s
+   Uses
+      At line 59 in file lab2_tiva_template.s
+Comment: ProcessChar used once
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Relocatable symbols
+
+ResetLUT 0000000C
+
+Symbol: ResetLUT
+   Definitions
+      At line 52 in file lab2_tiva_template.s
+   Uses
+      At line 65 in file lab2_tiva_template.s
+Comment: ResetLUT used once
+Shift_and_display 00000030
+
+Symbol: Shift_and_display
+   Definitions
+      At line 82 in file lab2_tiva_template.s
+   Uses
+      At line 100 in file lab2_tiva_template.s
+Comment: Shift_and_display used once
+ShortDelay 000001CA
+
+Symbol: ShortDelay
+   Definitions
+      At line 476 in file lab2_tiva_template.s
+   Uses
+      At line 455 in file lab2_tiva_template.s
+Comment: ShortDelay used once
+SpeakerBeep 0000017E
+
+Symbol: SpeakerBeep
+   Definitions
+      At line 438 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: SpeakerBeep unused
+Start 00000000
+
+Symbol: Start
+   Definitions
+      At line 28 in file lab2_tiva_template.s
+   Uses
+      At line 16 in file lab2_tiva_template.s
+Comment: Start used once
+buzz_loop 000001AA
+
+Symbol: buzz_loop
+   Definitions
+      At line 454 in file lab2_tiva_template.s
+   Uses
+      At line 459 in file lab2_tiva_template.s
+Comment: buzz_loop used once
+delay_back 000001E2
+
+Symbol: delay_back
+   Definitions
+      At line 491 in file lab2_tiva_template.s
+   Uses
+      At line 489 in file lab2_tiva_template.s
+Comment: delay_back used once
+delay_loop 000001DC
+
+Symbol: delay_loop
+
+
+
+ARM Macro Assembler    Page 4 Alphabetic symbol ordering
+Relocatable symbols
+
+   Definitions
+      At line 486 in file lab2_tiva_template.s
+   Uses
+      At line 492 in file lab2_tiva_template.s
+Comment: delay_loop used once
+delay_outer_loop 000001CC
+
+Symbol: delay_outer_loop
+   Definitions
+      At line 479 in file lab2_tiva_template.s
+   Uses
+      At line 490 in file lab2_tiva_template.s
+Comment: delay_outer_loop used once
+done_delay 000001E4
+
+Symbol: done_delay
+   Definitions
+      At line 493 in file lab2_tiva_template.s
+   Uses
+      At line 482 in file lab2_tiva_template.s
+Comment: done_delay used once
+exitDelay 00000098
+
+Symbol: exitDelay
+   Definitions
+      At line 204 in file lab2_tiva_template.s
+   Uses
+      At line 201 in file lab2_tiva_template.s
+Comment: exitDelay used once
+loop1 0000008C
+
+Symbol: loop1
+   Definitions
+      At line 196 in file lab2_tiva_template.s
+   Uses
+      At line 199 in file lab2_tiva_template.s
+Comment: loop1 used once
+make_a_sound 00000194
+
+Symbol: make_a_sound
+   Definitions
+      At line 446 in file lab2_tiva_template.s
+   Uses
+      At line 443 in file lab2_tiva_template.s
+Comment: make_a_sound used once
+not_done_delay 000001D4
+
+Symbol: not_done_delay
+   Definitions
+      At line 483 in file lab2_tiva_template.s
+   Uses
+      At line 481 in file lab2_tiva_template.s
+Comment: not_done_delay used once
+28 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+BLUE 00000004
+
+Symbol: BLUE
+   Definitions
+      At line 21 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: BLUE unused
+GPIO_AFSEL_OFFSET 00000420
+
+Symbol: GPIO_AFSEL_OFFSET
+   Definitions
+      At line 309 in file lab2_tiva_template.s
+   Uses
+      At line 420 in file lab2_tiva_template.s
+Comment: GPIO_AFSEL_OFFSET used once
+GPIO_AMSEL_OFFSET 00000528
+
+Symbol: GPIO_AMSEL_OFFSET
+   Definitions
+      At line 314 in file lab2_tiva_template.s
+   Uses
+      At line 413 in file lab2_tiva_template.s
+Comment: GPIO_AMSEL_OFFSET used once
+GPIO_CR_OFFSET 00000524
+
+Symbol: GPIO_CR_OFFSET
+   Definitions
+      At line 313 in file lab2_tiva_template.s
+   Uses
+      At line 411 in file lab2_tiva_template.s
+Comment: GPIO_CR_OFFSET used once
+GPIO_DATA_OFFSET 00000000
+
+Symbol: GPIO_DATA_OFFSET
+   Definitions
+      At line 307 in file lab2_tiva_template.s
+   Uses
+      At line 451 in file lab2_tiva_template.s
+      At line 457 in file lab2_tiva_template.s
+      At line 461 in file lab2_tiva_template.s
+      At line 463 in file lab2_tiva_template.s
+
+GPIO_DEN_OFFSET 0000051C
+
+Symbol: GPIO_DEN_OFFSET
+   Definitions
+      At line 311 in file lab2_tiva_template.s
+   Uses
+      At line 423 in file lab2_tiva_template.s
+Comment: GPIO_DEN_OFFSET used once
+GPIO_DIR_OFFSET 00000400
+
+Symbol: GPIO_DIR_OFFSET
+   Definitions
+      At line 308 in file lab2_tiva_template.s
+   Uses
+      At line 416 in file lab2_tiva_template.s
+      At line 418 in file lab2_tiva_template.s
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Absolute symbols
+
+
+GPIO_LOCK_KEY 4C4F434B
+
+Symbol: GPIO_LOCK_KEY
+   Definitions
+      At line 319 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_LOCK_KEY unused
+GPIO_LOCK_OFFSET 00000520
+
+Symbol: GPIO_LOCK_OFFSET
+   Definitions
+      At line 312 in file lab2_tiva_template.s
+   Uses
+      At line 409 in file lab2_tiva_template.s
+Comment: GPIO_LOCK_OFFSET used once
+GPIO_PCTL_OFFSET 0000052C
+
+Symbol: GPIO_PCTL_OFFSET
+   Definitions
+      At line 315 in file lab2_tiva_template.s
+   Uses
+      At line 415 in file lab2_tiva_template.s
+Comment: GPIO_PCTL_OFFSET used once
+GPIO_PORTA 40004000
+
+Symbol: GPIO_PORTA
+   Definitions
+      At line 289 in file lab2_tiva_template.s
+   Uses
+      At line 364 in file lab2_tiva_template.s
+      At line 499 in file lab2_tiva_template.s
+
+GPIO_PORTB 40005000
+
+Symbol: GPIO_PORTB
+   Definitions
+      At line 290 in file lab2_tiva_template.s
+   Uses
+      At line 369 in file lab2_tiva_template.s
+      At line 500 in file lab2_tiva_template.s
+
+GPIO_PORTC 40006000
+
+Symbol: GPIO_PORTC
+   Definitions
+      At line 291 in file lab2_tiva_template.s
+   Uses
+      At line 374 in file lab2_tiva_template.s
+      At line 500 in file lab2_tiva_template.s
+
+GPIO_PORTD 40007000
+
+Symbol: GPIO_PORTD
+   Definitions
+      At line 292 in file lab2_tiva_template.s
+   Uses
+      At line 379 in file lab2_tiva_template.s
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Absolute symbols
+
+      At line 501 in file lab2_tiva_template.s
+
+GPIO_PORTE 40024000
+
+Symbol: GPIO_PORTE
+   Definitions
+      At line 293 in file lab2_tiva_template.s
+   Uses
+      At line 384 in file lab2_tiva_template.s
+      At line 450 in file lab2_tiva_template.s
+      At line 501 in file lab2_tiva_template.s
+
+GPIO_PORTF 40025000
+
+Symbol: GPIO_PORTF
+   Definitions
+      At line 294 in file lab2_tiva_template.s
+   Uses
+      At line 389 in file lab2_tiva_template.s
+      At line 502 in file lab2_tiva_template.s
+
+GPIO_PORTF_AFSEL_R 40025420
+
+Symbol: GPIO_PORTF_AFSEL_R
+   Definitions
+      At line 247 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_AFSEL_R unused
+GPIO_PORTF_AMSEL_R 40025528
+
+Symbol: GPIO_PORTF_AMSEL_R
+   Definitions
+      At line 252 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_AMSEL_R unused
+GPIO_PORTF_CR_R 40025524
+
+Symbol: GPIO_PORTF_CR_R
+   Definitions
+      At line 251 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_CR_R unused
+GPIO_PORTF_DATA_R 400253FC
+
+Symbol: GPIO_PORTF_DATA_R
+   Definitions
+      At line 246 in file lab2_tiva_template.s
+   Uses
+      At line 34 in file lab2_tiva_template.s
+Comment: GPIO_PORTF_DATA_R used once
+GPIO_PORTF_DEN_R 4002551C
+
+Symbol: GPIO_PORTF_DEN_R
+   Definitions
+      At line 249 in file lab2_tiva_template.s
+   Uses
+
+
+
+ARM Macro Assembler    Page 4 Alphabetic symbol ordering
+Absolute symbols
+
+      None
+Comment: GPIO_PORTF_DEN_R unused
+GPIO_PORTF_DIR_R 40025400
+
+Symbol: GPIO_PORTF_DIR_R
+   Definitions
+      At line 245 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_DIR_R unused
+GPIO_PORTF_LOCK_R 40025520
+
+Symbol: GPIO_PORTF_LOCK_R
+   Definitions
+      At line 250 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_LOCK_R unused
+GPIO_PORTF_PCTL_R 4002552C
+
+Symbol: GPIO_PORTF_PCTL_R
+   Definitions
+      At line 253 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_PCTL_R unused
+GPIO_PORTF_PUR_R 40025510
+
+Symbol: GPIO_PORTF_PUR_R
+   Definitions
+      At line 248 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GPIO_PORTF_PUR_R unused
+GPIO_PUR_OFFSET 00000510
+
+Symbol: GPIO_PUR_OFFSET
+   Definitions
+      At line 310 in file lab2_tiva_template.s
+   Uses
+      At line 421 in file lab2_tiva_template.s
+Comment: GPIO_PUR_OFFSET used once
+GREEN 00000008
+
+Symbol: GREEN
+   Definitions
+      At line 22 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: GREEN unused
+PORT_A_MASK 000000FC
+
+Symbol: PORT_A_MASK
+   Definitions
+      At line 299 in file lab2_tiva_template.s
+   Uses
+      At line 365 in file lab2_tiva_template.s
+      At line 499 in file lab2_tiva_template.s
+
+
+
+
+ARM Macro Assembler    Page 5 Alphabetic symbol ordering
+Absolute symbols
+
+PORT_B_MASK 000000FD
+
+Symbol: PORT_B_MASK
+   Definitions
+      At line 300 in file lab2_tiva_template.s
+   Uses
+      At line 370 in file lab2_tiva_template.s
+      At line 500 in file lab2_tiva_template.s
+
+PORT_C_MASK 00000030
+
+Symbol: PORT_C_MASK
+   Definitions
+      At line 301 in file lab2_tiva_template.s
+   Uses
+      At line 375 in file lab2_tiva_template.s
+      At line 500 in file lab2_tiva_template.s
+
+PORT_D_MASK 000000CC
+
+Symbol: PORT_D_MASK
+   Definitions
+      At line 302 in file lab2_tiva_template.s
+   Uses
+      At line 380 in file lab2_tiva_template.s
+      At line 501 in file lab2_tiva_template.s
+
+PORT_E_MASK 00000037
+
+Symbol: PORT_E_MASK
+   Definitions
+      At line 303 in file lab2_tiva_template.s
+   Uses
+      At line 385 in file lab2_tiva_template.s
+      At line 450 in file lab2_tiva_template.s
+      At line 501 in file lab2_tiva_template.s
+
+PORT_F_MASK 0000000E
+
+Symbol: PORT_F_MASK
+   Definitions
+      At line 304 in file lab2_tiva_template.s
+   Uses
+      At line 390 in file lab2_tiva_template.s
+      At line 502 in file lab2_tiva_template.s
+
+RED 00000002
+
+Symbol: RED
+   Definitions
+      At line 20 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: RED unused
+SHORTDELAYCOUNT 00000190
+
+Symbol: SHORTDELAYCOUNT
+   Definitions
+      At line 474 in file lab2_tiva_template.s
+
+
+
+ARM Macro Assembler    Page 6 Alphabetic symbol ordering
+Absolute symbols
+
+   Uses
+      At line 485 in file lab2_tiva_template.s
+Comment: SHORTDELAYCOUNT used once
+SOMEDELAY 0029F630
+
+Symbol: SOMEDELAY
+   Definitions
+      At line 26 in file lab2_tiva_template.s
+   Uses
+      At line 194 in file lab2_tiva_template.s
+Comment: SOMEDELAY used once
+SW1 00000010
+
+Symbol: SW1
+   Definitions
+      At line 23 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: SW1 unused
+SW2 00000001
+
+Symbol: SW2
+   Definitions
+      At line 24 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: SW2 unused
+SYSCTL_HBCTL 400FE06C
+
+Symbol: SYSCTL_HBCTL
+   Definitions
+      At line 317 in file lab2_tiva_template.s
+   Uses
+      None
+Comment: SYSCTL_HBCTL unused
+SYSCTL_RCGCGPIO_R 400FE608
+
+Symbol: SYSCTL_RCGCGPIO_R
+   Definitions
+      At line 320 in file lab2_tiva_template.s
+   Uses
+      At line 337 in file lab2_tiva_template.s
+Comment: SYSCTL_RCGCGPIO_R used once
+SpeakerBeepLength 00000300
+
+Symbol: SpeakerBeepLength
+   Definitions
+      At line 436 in file lab2_tiva_template.s
+   Uses
+      At line 447 in file lab2_tiva_template.s
+Comment: SpeakerBeepLength used once
+41 symbols
+405 symbols in table
